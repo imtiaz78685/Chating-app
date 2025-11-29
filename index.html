@@ -3,102 +3,493 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>P2P Dark Chat</title>
+  <title>Chat With Imtiaz</title>
   <script src="https://unpkg.com/peerjs@1.5.0/dist/peerjs.min.js"></script>
 <style>
   :root{
-    --bg:#0a1a18;
-    --cardBg:#0f2420;
-    --accent:#25d366;
-    --muted:#6b7c7a;
-    --friendBubble:#1a3530;
-    --myBubble:#1e4a3b;
-    --error:#ff4757;
-    --warning:#ffa502;
+    --bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --cardBg: rgba(255,255,255,0.95);
+    --accent: #25d366;
+    --muted: #667781;
+    --friendBubble: #ffffff;
+    --myBubble: #dcf8c6;
+    --error: #ff4757;
+    --warning: #ffa502;
+    --shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
   }
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:var(--bg);color:#e6f2f1;overflow:hidden}
-  .app{width:100vw;height:100vh;display:flex;flex-direction:column}
-  .header{background:var(--cardBg);padding:16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.02)}
-  .title{display:flex;align-items:center;gap:12px}
-  .dot{width:32px;height:32px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;color:#000}
-  h3{font-size:18px;margin:0}
-  .status{font-size:12px;color:var(--muted)}
-  .controls{display:flex;align-items:center;gap:8px}
-  .id-box{background:rgba(255,255,255,0.02);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);position:relative}
-  button.btn{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px 12px;border-radius:8px;color:var(--accent);cursor:pointer;font-weight:600;transition:all 0.2s}
-  button.btn:hover{background:rgba(37,211,102,0.1);border-color:var(--accent)}
-  button.btn:disabled{opacity:.45;cursor:not-allowed}
-  .body{display:flex;flex-direction:column;height:calc(100vh - 80px)}
-  .top-controls{padding:12px;display:flex;gap:8px;align-items:center;border-bottom:1px solid rgba(255,255,255,0.02);flex-wrap:wrap}
-  input[type="text"].small{flex:1;min-width:200px;padding:10px;border-radius:8px;background:#042b28;border:1px solid rgba(255,255,255,0.02);color:#e6f2f1;transition:border-color 0.2s}
-  input[type="text"].small:focus{outline:none;border-color:var(--accent)}
-  .chat-window{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:linear-gradient(180deg, rgba(0,0,0,0.02), transparent);scroll-behavior:smooth}
-  .bubble{max-width:75%;padding:12px 16px;border-radius:18px;color:#e6f2f1;position:relative;word-wrap:break-word;font-size:14px;line-height:1.4;animation:slideIn 0.3s ease}
-  .friend{align-self:flex-start;background:linear-gradient(135deg,var(--friendBubble),#0f2b28);border:1px solid rgba(255,255,255,0.03);border-bottom-left-radius:6px}
-  .me{align-self:flex-end;background:linear-gradient(135deg,var(--myBubble),#134f3b);border:1px solid rgba(255,255,255,0.03);border-bottom-right-radius:6px}
-  .ts{font-size:11px;color:var(--muted);margin-top:6px;opacity:.8}
-  .input-area{display:flex;gap:8px;padding:12px;border-top:1px solid rgba(255,255,255,0.02);align-items:center}
-  input[type="text"].msg{flex:1;padding:14px 18px;border-radius:25px;background:#052b29;border:1px solid rgba(255,255,255,0.03);color:#e6f2f1;transition:all 0.2s}
-  input[type="text"].msg:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(37,211,102,0.1)}
-  .typing{font-size:12px;color:var(--muted);padding-left:12px;height:18px;font-style:italic}
-  .small-muted{font-size:12px;color:var(--muted)}
-  .id-actions{display:flex;gap:6px;flex-wrap:wrap}
-  .notice{padding:12px;text-align:center;font-size:13px;color:var(--muted);border-top:1px dashed rgba(255,255,255,0.02);background:rgba(0,0,0,0.1)}
-  .copyBtn{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);padding:8px 12px;border-radius:8px;color:var(--muted);cursor:pointer;transition:all 0.2s}
-  .copyBtn:hover{background:rgba(255,255,255,0.05);color:var(--accent)}
-  .connected-indicator{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;transition:all 0.3s}
-  .connected-indicator.off{background:#6b6b6b}
-  .connected-indicator.on{background:var(--accent);box-shadow:0 0 12px rgba(37,211,102,0.3);animation:pulse 2s infinite}
-  .system-msg{align-self:center;background:rgba(255,255,255,0.05);color:var(--muted);font-size:12px;padding:6px 12px;border-radius:12px;margin:8px 0}
-  .emoji-btn{background:none;border:none;font-size:18px;cursor:pointer;padding:4px;border-radius:4px;transition:background 0.2s}
-  .emoji-btn:hover{background:rgba(255,255,255,0.1)}
-  .file-input{display:none}
-  .attachment-btn{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);padding:8px;border-radius:8px;cursor:pointer;color:var(--muted);transition:all 0.2s}
-  .attachment-btn:hover{background:rgba(255,255,255,0.05);color:var(--accent)}
-  .sound-toggle{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);padding:6px 8px;border-radius:6px;cursor:pointer;color:var(--muted);font-size:12px;transition:all 0.2s}
-  .sound-toggle.on{color:var(--accent);border-color:var(--accent)}
-  .message-time{font-size:10px;color:var(--muted);opacity:0.7;margin-left:8px}
-  .online-count{font-size:11px;color:var(--accent);margin-left:4px}
   
-  @keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.7}}
+  *{margin:0;padding:0;box-sizing:border-box}
+  
+  body{
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: #333;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+  }
+  
+  .app{
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  
+  .header{
+    background: var(--cardBg);
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(10px);
+  }
+  
+  .title{
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  
+  .avatar{
+    width: 45px;
+    height: 45px;
+    background: linear-gradient(135deg, #25d366, #128c7e);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+    color: white;
+    box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+  }
+  
+  h3{
+    font-size: 20px;
+    margin: 0;
+    color: #111;
+    font-weight: 600;
+  }
+  
+  .status{
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  
+  .controls{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .id-box{
+    background: rgba(255,255,255,0.8);
+    padding: 10px 15px;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+  }
+  
+  .call-controls{
+    display: flex;
+    gap: 8px;
+  }
+  
+  .call-btn{
+    background: rgba(37, 211, 102, 0.1);
+    border: 2px solid var(--accent);
+    padding: 10px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s;
+    color: var(--accent);
+    font-size: 16px;
+  }
+  
+  .call-btn:hover{
+    background: var(--accent);
+    color: white;
+    transform: scale(1.1);
+  }
+  
+  .call-btn.video{
+    border-color: #2196F3;
+    color: #2196F3;
+    background: rgba(33, 150, 243, 0.1);
+  }
+  
+  .call-btn.video:hover{
+    background: #2196F3;
+  }
+  
+  button.btn{
+    background: linear-gradient(135deg, var(--accent), #128c7e);
+    border: none;
+    padding: 12px 20px;
+    border-radius: 25px;
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+  }
+  
+  button.btn:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+  }
+  
+  button.btn:disabled{
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+  
+  .body{
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 80px);
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="chat-bg" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23chat-bg)"/></svg>');
+  }
+  
+  .top-controls{
+    padding: 15px 20px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background: rgba(255,255,255,0.9);
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    flex-wrap: wrap;
+    backdrop-filter: blur(10px);
+  }
+  
+  input[type="text"].small{
+    flex: 1;
+    min-width: 250px;
+    padding: 12px 16px;
+    border-radius: 25px;
+    background: rgba(255,255,255,0.9);
+    border: 2px solid rgba(0,0,0,0.1);
+    color: #333;
+    transition: all 0.3s;
+    font-size: 14px;
+  }
+  
+  input[type="text"].small:focus{
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
+  }
+  
+  .chat-window{
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    scroll-behavior: smooth;
+  }
+  
+  .bubble{
+    max-width: 70%;
+    padding: 12px 16px;
+    border-radius: 18px;
+    position: relative;
+    word-wrap: break-word;
+    font-size: 15px;
+    line-height: 1.4;
+    animation: slideIn 0.4s ease;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+  
+  .friend{
+    align-self: flex-start;
+    background: var(--friendBubble);
+    border-bottom-left-radius: 4px;
+    border: 1px solid rgba(0,0,0,0.05);
+  }
+  
+  .me{
+    align-self: flex-end;
+    background: var(--myBubble);
+    border-bottom-right-radius: 4px;
+    border: 1px solid rgba(0,0,0,0.05);
+  }
+  
+  .ts{
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 8px;
+    opacity: 0.8;
+    text-align: right;
+  }
+  
+  .input-area{
+    display: flex;
+    gap: 10px;
+    padding: 15px 20px;
+    background: rgba(255,255,255,0.95);
+    border-top: 1px solid rgba(0,0,0,0.1);
+    align-items: center;
+    backdrop-filter: blur(10px);
+  }
+  
+  input[type="text"].msg{
+    flex: 1;
+    padding: 15px 20px;
+    border-radius: 25px;
+    background: rgba(255,255,255,0.9);
+    border: 2px solid rgba(0,0,0,0.1);
+    color: #333;
+    transition: all 0.3s;
+    font-size: 15px;
+  }
+  
+  input[type="text"].msg:focus{
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
+  }
+  
+  .typing{
+    font-size: 13px;
+    color: var(--accent);
+    padding-left: 15px;
+    height: 20px;
+    font-style: italic;
+    font-weight: 500;
+  }
+  
+  .small-muted{
+    font-size: 13px;
+    color: var(--muted);
+  }
+  
+  .id-actions{
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  
+  .notice{
+    padding: 15px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--muted);
+    background: rgba(255,255,255,0.8);
+    border-top: 1px solid rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+  }
+  
+  .copyBtn{
+    background: rgba(37, 211, 102, 0.1);
+    border: 2px solid var(--accent);
+    padding: 10px 16px;
+    border-radius: 20px;
+    color: var(--accent);
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 600;
+  }
+  
+  .copyBtn:hover{
+    background: var(--accent);
+    color: white;
+    transform: translateY(-2px);
+  }
+  
+  .connected-indicator{
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+    transition: all 0.3s;
+  }
+  
+  .connected-indicator.off{
+    background: #ccc;
+  }
+  
+  .connected-indicator.on{
+    background: var(--accent);
+    box-shadow: 0 0 15px rgba(37, 211, 102, 0.5);
+    animation: pulse 2s infinite;
+  }
+  
+  .system-msg{
+    align-self: center;
+    background: rgba(255,255,255,0.8);
+    color: var(--muted);
+    font-size: 13px;
+    padding: 8px 16px;
+    border-radius: 15px;
+    margin: 10px 0;
+    backdrop-filter: blur(10px);
+  }
+  
+  .media-controls{
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  
+  .media-btn{
+    background: rgba(255,255,255,0.9);
+    border: 2px solid rgba(0,0,0,0.1);
+    padding: 10px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 16px;
+  }
+  
+  .media-btn:hover{
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    transform: scale(1.1);
+  }
+  
+  .file-input{
+    display: none;
+  }
+  
+  .sound-toggle{
+    background: rgba(255,255,255,0.9);
+    border: 2px solid rgba(0,0,0,0.1);
+    padding: 8px 12px;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 12px;
+  }
+  
+  .sound-toggle.on{
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+  
+  .message-time{
+    font-size: 11px;
+    color: var(--muted);
+    opacity: 0.8;
+    margin-left: 10px;
+  }
+  
+  .online-count{
+    font-size: 12px;
+    color: var(--accent);
+    margin-left: 6px;
+    font-weight: 600;
+  }
+  
+  .video-container{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    display: none;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+  }
+  
+  .video-call{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+  }
+  
+  .video-controls{
+    position: absolute;
+    bottom: 30px;
+    display: flex;
+    gap: 20px;
+  }
+  
+  .video-btn{
+    background: rgba(255,255,255,0.2);
+    border: none;
+    padding: 15px;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 20px;
+  }
+  
+  .video-btn.end{
+    background: #ff4757;
+  }
+  
+  .video-btn:hover{
+    transform: scale(1.1);
+  }
+  
+  @keyframes slideIn{
+    from{opacity:0;transform:translateY(20px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+  
+  @keyframes pulse{
+    0%,100%{opacity:1}
+    50%{opacity:0.7}
+  }
   
   @media (max-width: 768px){
-    .header{padding:12px;flex-direction:column;gap:8px}
-    .controls{width:100%;justify-content:space-between}
+    .header{padding:12px 15px}
+    .controls{flex-direction:column;gap:8px}
     .top-controls{flex-direction:column;align-items:stretch}
-    .id-actions{width:100%;justify-content:stretch}
     .bubble{max-width:85%}
+    .input-area{padding:12px 15px}
     input[type="text"].small{min-width:unset}
   }
 </style>
 </head>
 <body>
 
-<div class="app" role="application" aria-label="P2P Dark Chat">
+<div class="app" role="application" aria-label="WhatsApp Clone">
   <div class="header">
     <div class="title">
-      <div class="dot">P2</div>
+      <div class="avatar">IM</div>
       <div>
-        <h3>Dark P2P Chat</h3>
-        <div class="status" id="connStatus">Not connected</div>
+        <h3>Chat With Imtiaz</h3>
+        <div class="status" id="connStatus">Waiting for connection</div>
       </div>
     </div>
 
     <div class="controls">
+      <div class="call-controls" id="callControls" style="display:none;">
+        <button class="call-btn" id="voiceCallBtn" title="Voice Call">📞</button>
+        <button class="call-btn video" id="videoCallBtn" title="Video Call">📹</button>
+      </div>
       <div class="id-box small-muted">
-        Your ID: <span id="myIdText">...</span>
+        ID: <span id="myIdText">...</span>
         <span class="online-count" id="onlineCount"></span>
       </div>
       <button class="copyBtn" id="copyBtn">📋 Copy</button>
-      <button class="sound-toggle" id="soundToggle" title="Toggle sound notifications">🔊</button>
+      <button class="sound-toggle" id="soundToggle" title="Notifications">🔊</button>
     </div>
   </div>
 
   <div class="body">
-    <div class="top-controls">
-      <input class="small" id="peerToConnect" placeholder="Enter friend's ID to connect" maxlength="50" />
+    <div class="top-controls" id="connectionArea">
+      <input class="small" id="peerToConnect" placeholder="Paste friend's ID to chat with Imtiaz" maxlength="50" />
       <div class="id-actions">
         <button class="btn" id="connectBtn">🔗 Connect</button>
         <button class="btn" id="resetBtn">🔄 Reset</button>
@@ -108,23 +499,42 @@
 
     <div id="chat" class="chat-window"></div>
 
-    <div class="notice" id="notice">Share your ID with friend and they will connect — messages go direct between browsers.</div>
+    <div class="notice" id="notice">Share your ID with Imtiaz — all messages are end-to-end encrypted and secure</div>
 
     <div class="input-area">
-      <button class="emoji-btn" id="emojiBtn" title="Add emoji">😊</button>
-      <input class="msg" id="msgInput" placeholder="Type a message..." autocomplete="off" maxlength="500" />
-      <button class="attachment-btn" id="attachBtn" title="Send file">📎</button>
-      <input type="file" id="fileInput" class="file-input" accept="image/*,text/*,.pdf" />
-      <button class="btn" id="sendBtn">📤 Send</button>
+      <div class="media-controls">
+        <button class="media-btn" id="emojiBtn" title="Emoji">😊</button>
+        <button class="media-btn" id="attachBtn" title="Attach">📎</button>
+        <button class="media-btn" id="cameraBtn" title="Camera">📷</button>
+        <button class="media-btn" id="micBtn" title="Voice Note">🎤</button>
+        <button class="media-btn" id="recordBtn" title="Record Voice" style="display:none;background:#ff4757;color:white;">⏹️</button>
+      </div>
+      <input class="msg" id="msgInput" placeholder="Type a message" autocomplete="off" maxlength="1000" />
+      <input type="file" id="fileInput" class="file-input" accept="image/*,video/*,audio/*,text/*,.pdf,.doc,.docx,.zip,.rar" />
+      <input type="file" id="cameraInput" class="file-input" accept="image/*" capture="camera" />
+      <button class="btn" id="sendBtn">📤</button>
     </div>
 
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:rgba(255,255,255,0.9);">
       <div class="typing" id="typingIndicator"></div>
       <div class="small-muted">
         <span class="connected-indicator off" id="dot"></span>
-        <span id="connText">Disconnected</span>
+        <span id="connText">Offline</span>
         <span class="message-time" id="lastSeen"></span>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Video Call Container -->
+<div class="video-container" id="videoContainer">
+  <div class="video-call">
+    <video id="localVideo" autoplay muted style="width:200px;height:150px;border-radius:10px;position:absolute;top:20px;right:20px;"></video>
+    <video id="remoteVideo" autoplay style="width:80%;height:80%;border-radius:10px;"></video>
+    <div class="video-controls">
+      <button class="video-btn" id="muteBtn">🎤</button>
+      <button class="video-btn" id="cameraToggle">📹</button>
+      <button class="video-btn end" id="endCallBtn">📞</button>
     </div>
   </div>
 </div>
@@ -148,12 +558,28 @@
     }
   }
 
-  const peer = new Peer();
+  const peer = new Peer({
+    config: {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:global.stun.twilio.com:3478' }
+      ]
+    },
+    debug: 0
+  });
+  
   let conn = null;
   let typingTimeout = null;
   let soundEnabled = true;
   let messageCount = 0;
   let lastActivity = Date.now();
+  let isConnecting = false;
+  let localStream = null;
+  let remoteStream = null;
+  let call = null;
+  let mediaRecorder = null;
+  let recordedChunks = [];
+  let isRecording = false;
 
   const myIdText = document.getElementById('myIdText');
   const copyBtn = document.getElementById('copyBtn');
@@ -172,25 +598,40 @@
   const soundToggle = document.getElementById('soundToggle');
   const emojiBtn = document.getElementById('emojiBtn');
   const attachBtn = document.getElementById('attachBtn');
+  const cameraBtn = document.getElementById('cameraBtn');
+  const micBtn = document.getElementById('micBtn');
   const fileInput = document.getElementById('fileInput');
+  const cameraInput = document.getElementById('cameraInput');
   const onlineCount = document.getElementById('onlineCount');
   const lastSeen = document.getElementById('lastSeen');
+  const callControls = document.getElementById('callControls');
+  const voiceCallBtn = document.getElementById('voiceCallBtn');
+  const videoCallBtn = document.getElementById('videoCallBtn');
+  const videoContainer = document.getElementById('videoContainer');
+  const localVideo = document.getElementById('localVideo');
+  const remoteVideo = document.getElementById('remoteVideo');
+  const endCallBtn = document.getElementById('endCallBtn');
+  const connectionArea = document.getElementById('connectionArea');
 
-  const emojis = ['😊','😂','❤️','👍','👎','😢','😮','😡','🎉','🔥','💯','👏','🙏','💪','✨','🎯'];
+  const emojis = ['😊','😂','❤️','👍','👎','😢','😮','😡','🎉','🔥','💯','👏','🙏','💪','✨','🎯','🤔','😍','🥰','😘'];
 
   function setConnectedUI(isConnected){
     if(isConnected){
-      connStatus.innerText = 'Connected 🟢';
+      connStatus.innerHTML = '<span style="color:var(--accent)">✓ Online</span>';
       connText.innerText = 'Online';
       dot.classList.remove('off'); dot.classList.add('on');
       lastSeen.innerText = 'Active now';
-      onlineCount.innerText = '(2 online)';
+      onlineCount.innerText = '• Encrypted';
+      connectionArea.style.display = 'none';
+      callControls.style.display = 'flex';
     } else {
-      connStatus.innerText = 'Not connected 🔴';
+      connStatus.innerHTML = '<span style="color:var(--muted)">⚬ Waiting for connection</span>';
       connText.innerText = 'Offline';
       dot.classList.remove('on'); dot.classList.add('off');
       lastSeen.innerText = lastActivity ? `Last seen ${new Date(lastActivity).toLocaleTimeString()}` : '';
       onlineCount.innerText = '';
+      connectionArea.style.display = 'flex';
+      callControls.style.display = 'none';
     }
   }
 
@@ -203,7 +644,7 @@
       wrapper.className = 'bubble ' + (who === 'me' ? 'me' : 'friend');
       wrapper.innerHTML = `
         <div>${escapeHtml(text)}</div>
-        <div class="ts">${timeNow()}</div>
+        <div class="ts">${timeNow()} ${who === 'me' ? '✓✓' : ''}</div>
       `;
       messageCount++;
       if(who === 'friend') playNotificationSound();
@@ -211,27 +652,38 @@
     chat.appendChild(wrapper);
     chat.scrollTop = chat.scrollHeight;
     
-    // Update document title with unread count
     if(who === 'friend' && document.hidden){
-      document.title = `(${messageCount}) P2P Dark Chat`;
+      document.title = `(${messageCount}) New Messages`;
     }
   }
 
-  function addFileMessage(fileName, fileData, who){
+  function addMediaMessage(fileName, fileData, who, type = 'file'){
     const wrapper = document.createElement('div');
     wrapper.className = 'bubble ' + (who === 'me' ? 'me' : 'friend');
     
-    if(fileData.startsWith('data:image/')){
+    if(type === 'image'){
       wrapper.innerHTML = `
         <div>📷 ${escapeHtml(fileName)}</div>
-        <img src="${fileData}" style="max-width:200px;max-height:200px;border-radius:8px;margin-top:8px;" />
-        <div class="ts">${timeNow()}</div>
+        <img src="${fileData}" style="max-width:250px;max-height:250px;border-radius:12px;margin-top:8px;cursor:pointer;" onclick="window.open('${fileData}')" />
+        <div class="ts">${timeNow()} ${who === 'me' ? '✓✓' : ''}</div>
+      `;
+    } else if(type === 'video'){
+      wrapper.innerHTML = `
+        <div>🎥 ${escapeHtml(fileName)}</div>
+        <video controls style="max-width:250px;max-height:250px;border-radius:12px;margin-top:8px;" src="${fileData}"></video>
+        <div class="ts">${timeNow()} ${who === 'me' ? '✓✓' : ''}</div>
+      `;
+    } else if(type === 'audio'){
+      wrapper.innerHTML = `
+        <div>🎵 ${escapeHtml(fileName)}</div>
+        <audio controls style="width:200px;margin-top:8px;" src="${fileData}"></audio>
+        <div class="ts">${timeNow()} ${who === 'me' ? '✓✓' : ''}</div>
       `;
     } else {
       wrapper.innerHTML = `
         <div>📎 ${escapeHtml(fileName)}</div>
-        <a href="${fileData}" download="${fileName}" style="color:var(--accent);text-decoration:none;">Download file</a>
-        <div class="ts">${timeNow()}</div>
+        <a href="${fileData}" download="${fileName}" style="color:var(--accent);text-decoration:none;font-weight:600;">📥 Download</a>
+        <div class="ts">${timeNow()} ${who === 'me' ? '✓✓' : ''}</div>
       `;
     }
     
@@ -244,35 +696,111 @@
     notice.innerHTML = text;
   }
 
+  // Peer Events
   peer.on('open', id => {
     myIdText.innerText = id;
-    showNotice('🚀 Ready! Share your ID with friend or paste their ID above to connect.');
+    showNotice('🚀 <strong>Ready!</strong> Share your ID: <code style="background:rgba(37,211,102,0.1);padding:4px 8px;border-radius:6px;color:var(--accent);font-weight:600;">' + id + '</code>');
+  });
+  
+  peer.on('error', (err) => {
+    console.error('Peer error:', err);
+    if(err.type === 'peer-unavailable'){
+      showNotice('❌ Friend is not online or ID is incorrect.');
+    } else {
+      showNotice('❌ Network error. Please refresh and try again.');
+    }
+    if(isConnecting){
+      connectBtn.disabled = false;
+      connectBtn.innerText = '🔗 Connect';
+      isConnecting = false;
+    }
   });
 
   peer.on('connection', connection => {
     if(conn && conn.open){
-      connection.on('open', ()=> connection.send({type:'system', text:'User is busy'}));
+      connection.on('open', ()=> {
+        connection.send({type:'system', text:'User is busy'});
+        connection.close();
+      });
       return;
     }
     conn = connection;
+    addMessageBubble('Friend is connecting... 🔗', '', true);
     setupConnection();
   });
 
+  peer.on('call', incomingCall => {
+    const isVideoCall = incomingCall.metadata && incomingCall.metadata.video;
+    const callType = isVideoCall ? 'Video' : 'Voice';
+    
+    if(confirm(`Incoming ${callType} call from Imtiaz. Accept?`)){
+      const constraints = isVideoCall ? {video: true, audio: true} : {audio: true};
+      
+      navigator.mediaDevices.getUserMedia(constraints)
+        .then(stream => {
+          localStream = stream;
+          if(isVideoCall) {
+            localVideo.srcObject = stream;
+            videoContainer.style.display = 'block';
+          }
+          
+          incomingCall.answer(stream);
+          call = incomingCall;
+          
+          call.on('stream', remoteStream => {
+            if(isVideoCall) {
+              remoteVideo.srcObject = remoteStream;
+            } else {
+              const audio = new Audio();
+              audio.srcObject = remoteStream;
+              audio.play();
+            }
+          });
+          
+          call.on('close', () => {
+            endCall();
+          });
+          
+          addMessageBubble(`📞 ${callType} call connected`, '', true);
+        })
+        .catch(err => {
+          console.error('Media access error:', err);
+          alert(`Could not access ${isVideoCall ? 'camera/microphone' : 'microphone'}`);
+          incomingCall.close();
+        });
+    } else {
+      incomingCall.close();
+      addMessageBubble(`📞 ${callType} call declined`, '', true);
+    }
+  });
+
   function setupConnection(){
-    setConnectedUI(true);
-    showNotice('🔗 Connected! Messages are encrypted and go direct between browsers.');
-    lastActivity = Date.now();
+    if(!conn) return;
+    
+    conn.on('open', () => {
+      setConnectedUI(true);
+      showNotice('🔒 <strong>Secure connection established!</strong> All messages are encrypted.');
+      lastActivity = Date.now();
+      isConnecting = false;
+      addMessageBubble('🔐 Secure chat session started', '', true);
+    });
 
     conn.on('data', handleIncoming);
+    
     conn.on('close', ()=>{
-      addMessageBubble('Friend disconnected', '', true);
+      addMessageBubble('Friend disconnected 🚫', '', true);
       setConnectedUI(false);
       conn = null;
+      isConnecting = false;
+      showNotice('🔄 Connection closed. You can connect again.');
     });
+    
     conn.on('error', err=>{
-      console.error('Connection error', err);
-      addMessageBubble('Connection error occurred', '', true);
+      console.error('Connection error:', err);
+      addMessageBubble('Connection lost ⚠️', '', true);
       setConnectedUI(false);
+      conn = null;
+      isConnecting = false;
     });
   }
 
@@ -289,11 +817,11 @@
         addMessageBubble(data.text, 'friend');
         typingIndicator.innerText = '';
       } 
-      else if(data.type === 'file'){
-        addFileMessage(data.fileName, data.fileData, 'friend');
+      else if(data.type === 'media'){
+        addMediaMessage(data.fileName, data.fileData, 'friend', data.mediaType);
       }
       else if(data.type === 'typing'){
-        typingIndicator.innerText = '✍️ Friend is typing...';
+        typingIndicator.innerText = '✍️ typing...';
         clearTimeout(typingTimeout);
         typingTimeout = setTimeout(()=> typingIndicator.innerText = '', 2000);
       }
@@ -305,6 +833,7 @@
     }
   }
 
+  // Connection
   connectBtn.addEventListener('click', ()=>{
     const id = peerToConnect.value.trim();
     if(!id){ 
@@ -316,32 +845,61 @@
       showNotice('⚠️ Already connected. Reset first to connect to someone else.');
       return; 
     }
+    
+    if(isConnecting){
+      showNotice('⚠️ Already trying to connect. Please wait...');
+      return;
+    }
 
+    isConnecting = true;
     connectBtn.disabled = true;
     connectBtn.innerText = '🔄 Connecting...';
+    showNotice('🔄 Connecting to friend...');
     
-    conn = peer.connect(id, {reliable:true});
+    conn = peer.connect(id, {reliable:true, serialization: 'json'});
+    
+    const connectionTimeout = setTimeout(() => {
+      if(isConnecting && conn && !conn.open){
+        try{ conn.close(); } catch(e){}
+        conn = null;
+        connectBtn.disabled = false;
+        connectBtn.innerText = '🔗 Connect';
+        showNotice('❌ Connection timeout. Friend may be offline.');
+        setConnectedUI(false);
+        isConnecting = false;
+      }
+    }, 15000);
+    
     conn.on('open', ()=>{
+      clearTimeout(connectionTimeout);
       setupConnection();
-      conn.send({type:'system', text:'Connected successfully'});
       connectBtn.disabled = false;
       connectBtn.innerText = '🔗 Connect';
       peerToConnect.value = '';
+      addMessageBubble('Connected successfully! 🎉', '', true);
     });
+    
     conn.on('error', (err)=>{ 
+      clearTimeout(connectionTimeout);
+      console.error('Connection error:', err);
       showNotice('❌ Connection failed. Check the ID and try again.');
-      conn=null; 
+      conn = null; 
       setConnectedUI(false);
       connectBtn.disabled = false;
       connectBtn.innerText = '🔗 Connect';
+      isConnecting = false;
     });
   });
 
   resetBtn.addEventListener('click', ()=>{
-    if(conn){ try{ conn.close(); }catch(e){} conn = null; }
+    if(conn){ try{ conn.close(); }catch(e){} }
+    conn = null;
+    isConnecting = false;
+    connectBtn.disabled = false;
+    connectBtn.innerText = '🔗 Connect';
     setConnectedUI(false);
-    addMessageBubble('You disconnected', '', true);
-    showNotice('🔄 Disconnected. Share your ID or connect to friend.');
+    addMessageBubble('You disconnected 🚫', '', true);
+    showNotice('🔄 Disconnected. Ready to connect again.');
     peerToConnect.value = '';
   });
 
@@ -349,7 +907,7 @@
     if(confirm('Clear all messages?')){
       chat.innerHTML = '';
       messageCount = 0;
-      document.title = 'P2P Dark Chat';
+      document.title = 'Chat With Imtiaz';
       showNotice('🗑️ Chat cleared.');
     }
   });
@@ -360,7 +918,6 @@
       copyBtn.innerHTML = '✅ Copied!';
       setTimeout(()=> copyBtn.innerHTML = '📋 Copy', 1500);
     }).catch(()=>{
-      // Fallback for older browsers
       const textArea = document.createElement('textarea');
       textArea.value = id;
       document.body.appendChild(textArea);
@@ -389,29 +946,246 @@
     fileInput.click();
   });
 
-  fileInput.addEventListener('change', (e)=>{
+  cameraBtn.addEventListener('click', ()=>{
+    cameraInput.click();
+  });
+
+  // Voice Recording
+  micBtn.addEventListener('click', ()=>{
+    if(!conn || !conn.open){
+      showNotice('⚠️ Connect to Imtiaz first to send voice notes!');
+      return;
+    }
+    
+    if(!isRecording) {
+      startRecording();
+    } else {
+      stopRecording();
+    }
+  });
+  
+  function startRecording() {
+    navigator.mediaDevices.getUserMedia({audio: true})
+      .then(stream => {
+        mediaRecorder = new MediaRecorder(stream);
+        recordedChunks = [];
+        
+        mediaRecorder.ondataavailable = (event) => {
+          if(event.data.size > 0) {
+            recordedChunks.push(event.data);
+          }
+        };
+        
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(recordedChunks, {type: 'audio/wav'});
+          const reader = new FileReader();
+          reader.onload = () => {
+            const audioData = reader.result;
+            addMediaMessage('voice-note.wav', audioData, 'me', 'audio');
+            conn.send({type:'media', fileName: 'voice-note.wav', fileData: audioData, mediaType: 'audio'});
+          };
+          reader.readAsDataURL(blob);
+          
+          stream.getTracks().forEach(track => track.stop());
+        };
+        
+        mediaRecorder.start();
+        isRecording = true;
+        micBtn.style.background = '#ff4757';
+        micBtn.style.color = 'white';
+        micBtn.innerHTML = '⏹️';
+        micBtn.title = 'Stop Recording';
+        
+        addMessageBubble('🎤 Recording voice note...', '', true);
+      })
+      .catch(err => {
+        console.error('Could not access microphone:', err);
+        alert('Could not access microphone for voice recording.');
+      });
+  }
+  
+  function stopRecording() {
+    if(mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+      isRecording = false;
+      micBtn.style.background = '';
+      micBtn.style.color = '';
+      micBtn.innerHTML = '🎤';
+      micBtn.title = 'Voice Note';
+    }
+  }
+
+  // Voice Call
+  voiceCallBtn.addEventListener('click', ()=>{
+    if(!conn || !conn.open){
+      showNotice('⚠️ Connect to Imtiaz first to make calls!');
+      return;
+    }
+    
+    voiceCallBtn.disabled = true;
+    voiceCallBtn.innerHTML = '🔄';
+    
+    navigator.mediaDevices.getUserMedia({audio: true})
+      .then(stream => {
+        localStream = stream;
+        call = peer.call(conn.peer, stream, {metadata: {video: false}});
+        
+        call.on('stream', remoteStream => {
+          const audio = new Audio();
+          audio.srcObject = remoteStream;
+          audio.play();
+          addMessageBubble('📞 Voice call connected with Imtiaz', '', true);
+        });
+        
+        call.on('close', () => {
+          endCall();
+        });
+        
+        call.on('error', (err) => {
+          console.error('Call error:', err);
+          endCall();
+          addMessageBubble('❌ Call failed', '', true);
+        });
+        
+        addMessageBubble('📞 Calling Imtiaz...', '', true);
+        
+        // Show call UI
+        setTimeout(() => {
+          if(call && call.open) {
+            const callDiv = document.createElement('div');
+            callDiv.innerHTML = `
+              <div style="position:fixed;top:20px;right:20px;background:rgba(0,0,0,0.8);color:white;padding:15px;border-radius:10px;z-index:999;">
+                <div>📞 Voice Call Active</div>
+                <button onclick="endCall()" style="background:#ff4757;color:white;border:none;padding:8px 12px;border-radius:5px;margin-top:8px;cursor:pointer;">📞 End Call</button>
+              </div>
+            `;
+            document.body.appendChild(callDiv);
+          }
+        }, 1000);
+      })
+      .catch(err => {
+        console.error('Failed to get audio stream:', err);
+        alert('Could not access microphone. Please allow microphone access.');
+        voiceCallBtn.disabled = false;
+        voiceCallBtn.innerHTML = '📞';
+      });
+  });
+
+  // Video Call
+  videoCallBtn.addEventListener('click', ()=>{
+    if(!conn || !conn.open){
+      showNotice('⚠️ Connect to Imtiaz first to make video calls!');
+      return;
+    }
+    
+    videoCallBtn.disabled = true;
+    videoCallBtn.innerHTML = '🔄';
+    
+    navigator.mediaDevices.getUserMedia({video: true, audio: true})
+      .then(stream => {
+        localStream = stream;
+        localVideo.srcObject = stream;
+        call = peer.call(conn.peer, stream, {metadata: {video: true}});
+        
+        call.on('stream', remoteStream => {
+          remoteVideo.srcObject = remoteStream;
+          videoContainer.style.display = 'block';
+          addMessageBubble('📹 Video call connected with Imtiaz', '', true);
+        });
+        
+        call.on('close', () => {
+          endCall();
+        });
+        
+        call.on('error', (err) => {
+          console.error('Call error:', err);
+          endCall();
+          addMessageBubble('❌ Video call failed', '', true);
+        });
+        
+        videoContainer.style.display = 'block';
+        addMessageBubble('📹 Video calling Imtiaz...', '', true);
+      })
+      .catch(err => {
+        console.error('Failed to get video stream:', err);
+        alert('Could not access camera/microphone. Please allow camera and microphone access.');
+        videoCallBtn.disabled = false;
+        videoCallBtn.innerHTML = '📹';
+      });
+  });
+
+  function endCall(){
+    if(call) {
+      call.close();
+      call = null;
+    }
+    if(localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+      localStream = null;
+    }
+    
+    videoContainer.style.display = 'none';
+    localVideo.srcObject = null;
+    remoteVideo.srcObject = null;
+    
+    // Remove call UI
+    const callUIs = document.querySelectorAll('[style*="position:fixed"]');
+    callUIs.forEach(ui => {
+      if(ui.innerHTML.includes('Call Active')) {
+        ui.remove();
+      }
+    });
+    
+    // Re-enable call buttons
+    voiceCallBtn.disabled = false;
+    voiceCallBtn.innerHTML = '📞';
+    videoCallBtn.disabled = false;
+    videoCallBtn.innerHTML = '📹';
+    
+    addMessageBubble('📞 Call ended', '', true);
+  }
+  
+  // Make endCall globally accessible
+  window.endCall = endCall;
+
+  endCallBtn.addEventListener('click', endCall);
+
+  // File handling
+  fileInput.addEventListener('change', handleFileUpload);
+  cameraInput.addEventListener('change', handleFileUpload);
+
+  function handleFileUpload(e){
     const file = e.target.files[0];
     if(!file) return;
     
-    if(file.size > 5 * 1024 * 1024){
-      alert('File too large. Maximum size is 5MB.');
+    if(file.size > 25 * 1024 * 1024){
+      alert('File too large. Maximum size is 25MB.');
       return;
     }
     
     if(!conn || !conn.open){
-      alert('Not connected yet!');
+      showNotice('⚠️ Connect to Imtiaz first to share files!');
       return;
     }
 
     const reader = new FileReader();
     reader.onload = (e) => {
       const fileData = e.target.result;
-      addFileMessage(file.name, fileData, 'me');
-      conn.send({type:'file', fileName: file.name, fileData: fileData});
+      let mediaType = 'file';
+      
+      if(file.type.startsWith('image/')) mediaType = 'image';
+      else if(file.type.startsWith('video/')) mediaType = 'video';
+      else if(file.type.startsWith('audio/')) mediaType = 'audio';
+      
+      addMediaMessage(file.name, fileData, 'me', mediaType);
+      conn.send({type:'media', fileName: file.name, fileData: fileData, mediaType: mediaType});
+      
+      playNotificationSound();
     };
+    
     reader.readAsDataURL(file);
-    fileInput.value = '';
-  });
+    e.target.value = '';
+  }
 
   function sendMessage(){
     const txt = msgInput.value.trim();
@@ -445,7 +1219,7 @@
     }
   });
 
-  // Load saved settings
+  // Load settings
   const savedSound = localStorage.getItem('soundEnabled');
   if(savedSound !== null){
     soundEnabled = savedSound === 'true';
@@ -453,19 +1227,16 @@
     soundToggle.classList.toggle('on', soundEnabled);
   }
 
-  // Reset title when window becomes visible
   document.addEventListener('visibilitychange', ()=>{
     if(!document.hidden){
-      document.title = 'P2P Dark Chat';
+      document.title = 'Chat With Imtiaz';
       messageCount = 0;
     }
   });
 
-  // Auto-focus message input
   setConnectedUI(false);
   msgInput.focus();
   
-  // Add some helpful shortcuts
   document.addEventListener('keydown', (e)=>{
     if(e.ctrlKey || e.metaKey){
       if(e.key === 'k'){
